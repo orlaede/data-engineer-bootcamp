@@ -1,2 +1,2 @@
 def test_fummy():
-    assert True
+    assert False

@@ -1,0 +1,26 @@
+# tenplate para criacao de um bucket s3. Não esquecer de deletar os recursos
+# depois de cruar/testar
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-anatomy.html
+# Alguns recursos estão inclusos no free tier e são gratuitos por 1 ano, outros 
+# já serão cobrados por hora/minuto de uso.
+# OBS: cuidado o nome do recurso, ele é universal para aws
+Description: Cria bucket no S3
+
+Resources:
+  MyFirstBucket:
+    Type: AWS::S3::Bucket 
+    Properties:
+      BucketName: my-first-bucket 
+      BucketEncryption: 
+        ServerSideEncryptionConfiguration: 
+          - ServerSideEncryptionByDefault: 
+              ServerSideEncryptionByDefault
+                SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration: 
+            BlockPublicAcls: True
+            BlockPublicPolicy: True
+            IgnorePublicAcls: True
+            RestrictPublicBuckets: True
+      
+      # Existem mais propriedades opcionais para um bucket S3 que você pode ver aqui:
+      # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket.html

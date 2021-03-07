@@ -2,10 +2,10 @@ Description: Cria bucket no S3
 
 Resources:
 
-  BucketBeliscoS3:
+  MyFirstBucketS3:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: bucket-belisco-turma-4-github-actions
+      BucketName: my-first-bucket-s3
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -15,3 +15,99 @@ Resources:
         BlockPublicPolicy: True
         IgnorePublicAcls: True
         RestrictPublicBuckets: True
+
+  MyFirstRedshiftCluster:
+    Type: AWS::Redshift::Cluster
+    Properties: 
+      AllowVersionUpgrade: true
+      AutomatedSnapshotRetentionPeriod: 5 # retenção do snapshot
+      AvailabilityZone: us-east-1a # east virginia
+      ClusterIdentifier: my-first-redshift-cluster
+      ClusterParameterGroupName: !REef RedshiftParameterGroup
+      ClusterSubnetGroupName: !Ref RedshiftSubnetGroup
+      VpcSecurityGroupIds:
+        - !Ref RedshiftEC2SecurityGroup
+      ClusterType: multi-node
+      DBName: production
+      Encrypted: true
+      MasterUsername: admin
+      MasterUserPassword: Admin1234 # Nunca coloque senhas de sistemas que irão para produção em templates
+      # Uma boa prática aqui seria definir uma variável no seu CI/CD que sera inputada aqui durante a execução
+      NodeType: dc2.large # https://docs.aws.amazon.com/redshift/latest/mgmt/working-with-clusters.html
+      NumberOfNodes: 2
+      PubliclyAccessible: true
+      # IamRoles:
+      #   - !GetAtt RedshiftRole.Arn
+
+  RedshiftParameterGroup:
+    Type: AWS::Redshift::ClusterParameterGroup
+    Properties:
+      Description: Parameter group para o meu porimeiro cluster redshift
+      ParameterGroupFamily: redshift-1.0
+      Parameters:
+        - ParameterName: max_concurrency_scaling_clusters
+          ParameterValue: 1
+
+  RedshiftSubnetGroup:
+    Type: 'AWS::Redshift::ClusterSubnetGroup'
+    Properties:
+      Description: Redshift Subnet group
+      SubnetIds:
+        - !Ref RedshiftSubnet
+
+  RedshiftSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: us-east-1a
+      CidrBlock: 10.0.0.0/24
+      VpcId: !Ref RedshiftVPC 
+
+  RedshiftVPC: # virtual private cloud
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+
+  RedshiftEC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Redshift. Public access
+      GroupName: redshift-security-group
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 5439
+          IpProtocol: tcp
+          ToPort: 5439
+      SecurityGroupIngress:
+        - CidrIp: 191.33.126.100/32  #meu ip
+          FromPort: 5439
+          IpProtocol: tcp
+          ToPort: 5439
+      VpcId: !Ref RedshiftVPC
+
+
+  RedshiftVPCInternetGateway: # para dar acesso a internet
+    Type: AWS::EC2::InternetGateway
+
+  RedshiftVPCAttachGateway: # para linkar o gateway a VPC
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref RedshiftVPC
+      InternetGatewayId: !Ref RedshiftVPCInternetGateway
+
+  RedshiftRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref RedshiftVPC
+
+  RedshiftVPCRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref RedshiftVPCInternetGateway
+      RouteTableId: !Ref RedshiftRouteTable
+
+  RedshiftSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RedshiftRouteTable
+      SubnetId: !Ref RedshiftSubnet
